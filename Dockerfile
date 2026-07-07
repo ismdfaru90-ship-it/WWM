@@ -13,7 +13,7 @@ COPY pyproject.toml poetry.lock ./
 RUN touch README.md
 
 # Install Python dependencies
-RUN poetry install --no-root --no-dev
+RUN poetry install --no-root --without dev
 
 # Copy application code
 COPY . .
