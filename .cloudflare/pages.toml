@@ -7,5 +7,6 @@ compatibility_flags = ["nodejs_compat"]
   directory = "frontend/build"
 
 [vars]
-  # Backend URL will be set dynamically in CI
-  # VITE_BACKEND_BASE_URL = "your-railway-url.up.railway.app"
+  # Railway backend URL for OpenHands
+  VITE_BACKEND_BASE_URL = "openhands-production-51e5.up.railway.app"
+  VITE_USE_TLS = "true"

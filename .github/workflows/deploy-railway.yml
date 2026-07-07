@@ -123,7 +123,8 @@ jobs:
           if [ -f railway_url.txt ]; then
             BACKEND_URL=$(cat railway_url.txt)
           else
-            BACKEND_URL="${{ secrets.RAILWAY_BACKEND_URL }}"
+            # Default Railway backend URL for your OpenHands deployment
+            BACKEND_URL="openhands-production-51e5.up.railway.app"
           fi
           
           if [ -z "$BACKEND_URL" ]; then
