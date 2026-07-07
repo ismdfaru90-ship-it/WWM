@@ -22,21 +22,44 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    with op.get_context().autocommit_block():
+    # SQLite doesn't support CONCURRENTLY or IF NOT EXISTS for indexes
+    # Check if we're using SQLite and handle accordingly
+    bind = op.get_context().bind
+    dialect_name = getattr(bind.dialect, 'name', 'unknown') if bind else 'unknown'
+    
+    if dialect_name == 'postgresql':
+        with op.get_context().autocommit_block():
+            op.create_index(
+                'ix_event_callback_conversation_id_status_event_kind',
+                'event_callback',
+                ['conversation_id', 'status', 'event_kind'],
+                postgresql_concurrently=True,
+                if_not_exists=True,
+            )
+    else:
+        # SQLite - just create the index without concurrent mode
         op.create_index(
             'ix_event_callback_conversation_id_status_event_kind',
             'event_callback',
             ['conversation_id', 'status', 'event_kind'],
-            postgresql_concurrently=True,
-            if_not_exists=True,
         )
 
 
 def downgrade() -> None:
-    with op.get_context().autocommit_block():
+    bind = op.get_context().bind
+    dialect_name = getattr(bind.dialect, 'name', 'unknown') if bind else 'unknown'
+    
+    if dialect_name == 'postgresql':
+        with op.get_context().autocommit_block():
+            op.drop_index(
+                'ix_event_callback_conversation_id_status_event_kind',
+                table_name='event_callback',
+                postgresql_concurrently=True,
+                if_exists=True,
+            )
+    else:
+        # SQLite
         op.drop_index(
             'ix_event_callback_conversation_id_status_event_kind',
             table_name='event_callback',
-            postgresql_concurrently=True,
-            if_exists=True,
         )
