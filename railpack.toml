@@ -1,0 +1,5 @@
+[build]
+python_version = "3.13"
+
+[deploy]
+start_command = "uvicorn openhands.app_server.app:app --host 0.0.0.0 --port 3000"
