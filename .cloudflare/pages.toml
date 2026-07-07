@@ -1,0 +1,11 @@
+name = "openhands-frontend"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[builds]
+  command = "cd frontend && npm install && npm run build"
+  directory = "frontend/build"
+
+[vars]
+  # Backend URL will be set dynamically in CI
+  # VITE_BACKEND_BASE_URL = "your-railway-url.up.railway.app"

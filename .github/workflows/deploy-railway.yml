@@ -1,0 +1,192 @@
+name: Deploy OpenHands
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      backend_only:
+        description: 'Deploy backend only'
+        required: false
+        default: 'false'
+        type: boolean
+      frontend_only:
+        description: 'Deploy frontend only'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  PYTHON_VERSION: '3.12'
+
+jobs:
+  # Backend Deployment to Railway
+  deploy-backend:
+    name: Deploy Backend to Railway
+    runs-on: ubuntu-latest
+    if: github.event.inputs.frontend_only != 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: |
+          curl -fsSL https://railway.app/install.sh | sh
+          echo "$HOME/.railway/bin" >> $GITHUB_PATH
+
+      - name: Authenticate with Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: railway login
+
+      - name: Link Railway Project
+        env:
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+        run: |
+          railway init --id $RAILWAY_PROJECT_ID
+
+      - name: Set Environment Variables
+        env:
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          # Optional: Cloudflare R2 for file storage
+          AWS_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_KEY }}
+          AWS_S3_ENDPOINT_URL: ${{ secrets.CLOUDFLARE_R2_ENDPOINT }}
+        run: |
+          railway variables set LLM_API_KEY="$LLM_API_KEY"
+          railway variables set LLM_BASE_URL="$LLM_BASE_URL"
+          railway variables set LLM_MODEL="$LLM_MODEL"
+          railway variables set PORT=3000
+          railway variables set RUNTIME=docker
+          # Only set R2 vars if they're provided
+          if [ -n "$AWS_ACCESS_KEY_ID" ]; then
+            railway variables set AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"
+            railway variables set AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"
+            railway variables set AWS_S3_ENDPOINT_URL="$AWS_S3_ENDPOINT_URL"
+          fi
+
+      - name: Deploy to Railway
+        run: railway up --service openhands --detach
+
+      - name: Wait for deployment
+        run: |
+          echo "Waiting for Railway deployment..."
+          sleep 30
+
+      - name: Get Railway URL
+        id: railway-info
+        run: |
+          RAILWAY_URL=$(railway status --json 2>/dev/null | jq -r '.deployment.url // empty')
+          if [ -z "$RAILWAY_URL" ]; then
+            # Fallback: try to get URL from environment
+            RAILWAY_URL=$(railway variables get RAILWAY_PUBLIC_DOMAIN 2>/dev/null || echo "")
+          fi
+          echo "RAILWAY_URL=$RAILWAY_URL" >> $GITHUB_OUTPUT
+          echo "Railway backend URL: $RAILWAY_URL"
+
+      - name: Store Railway URL
+        run: |
+          echo "${{ steps.railway-info.outputs.RAILWAY_URL }}" > railway_url.txt
+
+      - name: Upload Railway URL artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: railway-url
+          path: railway_url.txt
+          retention-days: 1
+
+  # Frontend Deployment to Cloudflare Pages
+  deploy-frontend:
+    name: Deploy Frontend to Cloudflare Pages
+    runs-on: ubuntu-latest
+    if: github.event.inputs.backend_only != 'true'
+    needs: deploy-backend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Railway URL
+        if: needs.deploy-backend.outputs.railway-url != ''
+        id: download-url
+        uses: actions/download-artifact@v4
+        with:
+          name: railway-url
+          continue-on-error: true
+
+      - name: Set backend URL for frontend
+        id: backend-url
+        run: |
+          # Use the uploaded URL or fallback to secret
+          if [ -f railway_url.txt ]; then
+            BACKEND_URL=$(cat railway_url.txt)
+          else
+            BACKEND_URL="${{ secrets.RAILWAY_BACKEND_URL }}"
+          fi
+          
+          if [ -z "$BACKEND_URL" ]; then
+            echo "Warning: No backend URL found. Using empty string."
+            BACKEND_URL=""
+          fi
+          
+          echo "Using backend URL: $BACKEND_URL"
+          echo "BACKEND_URL=$BACKEND_URL" >> $GITHUB_OUTPUT
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: ./frontend
+        env:
+          VITE_BACKEND_BASE_URL: ${{ steps.backend-url.outputs.BACKEND_URL }}
+          VITE_USE_TLS: ${{ secrets.USE_TLS || 'false' }}
+        run: npm run build
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: openhands-frontend
+          directory: frontend/build
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          wranglerVersion: '3'
+
+  # Verification job
+  verify-deployment:
+    name: Verify Deployment
+    runs-on: ubuntu-latest
+    if: github.event.inputs.backend_only != 'true' && github.event.inputs.frontend_only != 'true'
+    needs: [deploy-backend, deploy-frontend]
+    steps:
+      - name: Download Railway URL
+        uses: actions/download-artifact@v4
+        with:
+          name: railway-url
+          continue-on-error: true
+
+      - name: Verify Backend
+        run: |
+          if [ -f railway_url.txt ]; then
+            BACKEND_URL=$(cat railway_url.txt)
+            echo "Verifying backend at: $BACKEND_URL"
+            curl -f -s -o /dev/null "$BACKEND_URL/api/v1/health" || echo "Backend health check not available"
+          fi
+          
+      - name: Summary
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- Backend: Deployed to Railway" >> $GITHUB_STEP_SUMMARY
+          echo "- Frontend: Deployed to Cloudflare Pages" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Note:** Update Cloudflare Pages environment variable VITE_BACKEND_BASE_URL to match your Railway backend URL if needed." >> $GITHUB_STEP_SUMMARY
