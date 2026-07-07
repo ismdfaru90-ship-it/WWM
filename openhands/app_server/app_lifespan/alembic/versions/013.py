@@ -23,23 +23,24 @@ def upgrade() -> None:
     (idle, running, paused, finished, error, stuck, deleting) for
     org-wide dashboard queries without requiring agent server calls.
     """
-    with op.batch_alter_table('conversation_metadata') as batch_op:
-        batch_op.add_column(
-            sa.Column(
-                'execution_status',
-                sa.String(),
-                nullable=True,
-            )
-        )
-        # Create index for efficient dashboard queries
-        batch_op.create_index(
-            'ix_conversation_metadata_execution_status',
+    # Add column without batch_alter_table to avoid SQLite compatibility issues
+    op.add_column(
+        'conversation_metadata',
+        sa.Column(
             'execution_status',
-            unique=False,
+            sa.String(),
+            nullable=True,
         )
+    )
+    # Create index for efficient dashboard queries
+    op.create_index(
+        'ix_conversation_metadata_execution_status',
+        'conversation_metadata',
+        ['execution_status'],
+        unique=False,
+    )
 
 
 def downgrade() -> None:
-    with op.batch_alter_table('conversation_metadata') as batch_op:
-        batch_op.drop_index('ix_conversation_metadata_execution_status')
-        batch_op.drop_column('execution_status')
+    op.drop_index('ix_conversation_metadata_execution_status', table_name='conversation_metadata')
+    op.drop_column('conversation_metadata', 'execution_status')
