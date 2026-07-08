@@ -416,6 +416,12 @@ def config_from_env() -> AppServerConfig:
 
     if config.sandbox_spec is None:
         runtime = os.getenv('RUNTIME') or os.getenv('OH_RUNTIME', '')
+        
+        # If Docker is not available, force process runtime
+        if not docker_available:
+            _logger.error('openhands.app_server.config: Docker not available, forcing process runtime for sandbox_spec')
+            runtime = 'process'
+        
         if runtime == 'remote':
             config.sandbox_spec = RemoteSandboxSpecServiceInjector()
         elif runtime in ('local', 'process'):
