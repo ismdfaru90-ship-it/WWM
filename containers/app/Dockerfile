@@ -101,5 +101,6 @@ USER root
 
 WORKDIR /app
 
-ENTRYPOINT ["/bin/bash", "-c"]
-CMD ["cd /app && uvicorn openhands.app_server.app:app --host 0.0.0.0 --port 3000"]
+COPY --chown=openhands:openhands --chmod=770 ./start.sh /app/start.sh
+RUN chmod +x /app/start.sh
+ENTRYPOINT ["/app/start.sh"]
