@@ -331,12 +331,13 @@ def config_from_env() -> AppServerConfig:
     if config.event_callback is None:
         config.event_callback = SQLEventCallbackServiceInjector()
 
+    import logging
+    _logger = logging.getLogger(__name__)
+    _logger.warning(f'openhands.app_server.config: sandbox={config.sandbox}, sandbox_spec={config.sandbox_spec}')
     if config.sandbox is None:
         # Legacy fallback
         runtime = os.getenv('RUNTIME') or os.getenv('OH_RUNTIME', '')
-        import logging
-        _logger = logging.getLogger(__name__)
-        _logger.info(f'Runtime config: RUNTIME={os.getenv("RUNTIME")}, OH_RUNTIME={os.getenv("OH_RUNTIME")}, resolved={runtime}')
+        _logger.warning(f'openhands.app_server.config: RUNTIME={os.getenv("RUNTIME")}, OH_RUNTIME={os.getenv("OH_RUNTIME")}, resolved={runtime}')
         if runtime == 'remote':
             config.sandbox = RemoteSandboxServiceInjector(
                 api_key=os.environ['SANDBOX_API_KEY'],
