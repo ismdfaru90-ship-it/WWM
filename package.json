@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@railway/cli": "^5.25.0",
+    "wrangler": "^4.108.0"
+  }
+}

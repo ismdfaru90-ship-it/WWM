@@ -334,6 +334,9 @@ def config_from_env() -> AppServerConfig:
     if config.sandbox is None:
         # Legacy fallback
         runtime = os.getenv('RUNTIME') or os.getenv('OH_RUNTIME', '')
+        import logging
+        _logger = logging.getLogger(__name__)
+        _logger.info(f'Runtime config: RUNTIME={os.getenv("RUNTIME")}, OH_RUNTIME={os.getenv("OH_RUNTIME")}, resolved={runtime}')
         if runtime == 'remote':
             config.sandbox = RemoteSandboxServiceInjector(
                 api_key=os.environ['SANDBOX_API_KEY'],
