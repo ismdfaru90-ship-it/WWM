@@ -18,6 +18,9 @@ RUN poetry install --no-root --no-dev
 # Copy application code
 COPY . .
 
+# Create data directory for SQLite
+RUN mkdir -p /app/data && chown -R appuser:appuser /app/data
+
 # Create non-root user
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
 USER appuser
