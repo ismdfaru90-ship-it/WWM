@@ -8,7 +8,8 @@ RUN pip install poetry==2.1.3
 
 RUN poetry config virtualenvs.create false
 
-RUN poetry lock --no-update || true
+# Update lock file if needed
+RUN poetry lock || true
 
 RUN poetry install --no-root --only main
 
