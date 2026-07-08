@@ -240,6 +240,10 @@ class AppServerConfig(OpenHandsModel):
 
 
 def config_from_env() -> AppServerConfig:
+    import sys
+    print('CONFIG_FROM_ENV CALLED', file=sys.stderr)
+    print(f'RUNTIME env: {os.getenv("RUNTIME")}', file=sys.stderr)
+    print(f'OH_RUNTIME env: {os.getenv("OH_RUNTIME")}', file=sys.stderr)
     # Import defaults...
     from openhands.app_server.app_conversation.live_status_app_conversation_service import (  # noqa: E501
         LiveStatusAppConversationServiceInjector,
