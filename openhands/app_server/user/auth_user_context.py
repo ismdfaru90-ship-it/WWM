@@ -47,11 +47,14 @@ class AuthUserContext(UserContext):
         if user_info is None:
             user_id = await self.get_user_id()
             settings = await self.user_auth.get_user_settings()
-            assert settings is not None
-            user_info = UserInfo(
-                id=user_id,
-                **settings.model_dump(context={'expose_secrets': True}),
-            )
+            if settings is None:
+                # Create a default UserInfo if settings are not found
+                user_info = UserInfo(id=user_id)
+            else:
+                user_info = UserInfo(
+                    id=user_id,
+                    **settings.model_dump(context={'expose_secrets': True}),
+                )
             self._user_info = user_info
         return user_info
 
