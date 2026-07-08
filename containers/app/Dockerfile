@@ -1,4 +1,5 @@
 ARG OPENHANDS_BUILD_VERSION=dev
+ARG REBUILD_DATE=2026-07-08
 FROM node:25.9-trixie-slim AS frontend-builder
 
 WORKDIR /app
