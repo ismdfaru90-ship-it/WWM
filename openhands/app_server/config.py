@@ -336,12 +336,30 @@ def config_from_env() -> AppServerConfig:
         config.event_callback = SQLEventCallbackServiceInjector()
 
     import logging
+    import docker
     _logger = logging.getLogger(__name__)
     _logger.error(f'openhands.app_server.config: sandbox={config.sandbox}, sandbox_spec={config.sandbox_spec}')
+    
+    # Check if Docker is available
+    docker_available = False
+    try:
+        docker_client = docker.from_env()
+        docker_client.ping()
+        docker_available = True
+        _logger.error('openhands.app_server.config: Docker is available')
+    except Exception as e:
+        _logger.error(f'openhands.app_server.config: Docker is NOT available: {e}')
+    
     if config.sandbox is None:
         # Legacy fallback
         runtime = os.getenv('RUNTIME') or os.getenv('OH_RUNTIME', '')
         _logger.error(f'openhands.app_server.config: RUNTIME={os.getenv("RUNTIME")}, OH_RUNTIME={os.getenv("OH_RUNTIME")}, resolved={runtime}')
+        
+        # If Docker is not available, force process runtime
+        if not docker_available:
+            _logger.error('openhands.app_server.config: Docker not available, forcing process runtime')
+            runtime = 'process'
+        
         if runtime == 'remote':
             config.sandbox = RemoteSandboxServiceInjector(
                 api_key=os.environ['SANDBOX_API_KEY'],
