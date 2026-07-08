@@ -8,5 +8,5 @@ compatibility_flags = ["nodejs_compat"]
 
 [vars]
   # Railway backend URL for OpenHands
-  VITE_BACKEND_BASE_URL = "openhands-production-51e5.up.railway.app"
+  VITE_BACKEND_BASE_URL = "openhands-new-production.up.railway.app"
   VITE_USE_TLS = "true"
