@@ -4,5 +4,8 @@ python = "3.13"
 [phases.setup]
 nixPkgs = ["python313", "python313Packages.poetry"]
 
+[phases.install]
+cmds = ["pip install poetry==2.3.4", "poetry install --no-interaction --no-ansi"]
+
 [deployment]
-startCommand = "uvicorn openhands.app_server.app:app --host 0.0.0.0 --port 3000"
+startCommand = "cd /app && PYTHONPATH=/app poetry run uvicorn openhands.app_server.app:app --host 0.0.0.0 --port 3000"
