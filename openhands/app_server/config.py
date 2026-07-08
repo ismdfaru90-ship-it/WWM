@@ -4,6 +4,11 @@ import os
 from pathlib import Path
 from typing import AsyncContextManager
 
+# Immediate startup debug - print to stderr at module load time
+import sys as _sys
+print(f"[CONFIG STARTUP] RUNTIME={os.environ.get('RUNTIME', 'NOT SET')}", file=_sys.stderr)
+print(f"[CONFIG STARTUP] OH_RUNTIME={os.environ.get('OH_RUNTIME', 'NOT SET')}", file=_sys.stderr)
+
 import httpx
 from fastapi import Depends, Request
 from pydantic import Field, SecretStr
