@@ -4,9 +4,11 @@ WORKDIR /app
 
 COPY pyproject.toml poetry.lock ./
 
-RUN pip install poetry==1.8.5
+RUN pip install poetry==2.1.3
 
 RUN poetry config virtualenvs.create false
+
+RUN poetry lock --no-update || true
 
 RUN poetry install --no-root --only main
 
