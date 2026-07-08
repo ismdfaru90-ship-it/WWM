@@ -11,6 +11,7 @@ from pydantic import Field, SecretStr
 # Import the event_callback module to ensure all processors are registered
 import openhands.app_server.event_callback  # noqa: F401
 from openhands.agent_server.env_parser import from_env
+import os
 from openhands.app_server.app_conversation.app_conversation_info_service import (
     AppConversationInfoService,
     AppConversationInfoServiceInjector,
@@ -189,6 +190,7 @@ def _get_default_file_store() -> FileStore:
 
 
 class AppServerConfig(OpenHandsModel):
+    runtime: str | None = Field(default=None, description="Runtime mode: local, process, or remote")
     persistence_dir: Path = Field(default_factory=get_default_persistence_dir)
     file_store: FileStore = Field(default_factory=_get_default_file_store)
     web_url: str | None = Field(
@@ -331,12 +333,13 @@ def config_from_env() -> AppServerConfig:
 
     if config.sandbox is None:
         # Legacy fallback
-        if os.getenv('RUNTIME') == 'remote':
+        runtime = os.getenv('RUNTIME') or os.getenv('OH_RUNTIME', '')
+        if runtime == 'remote':
             config.sandbox = RemoteSandboxServiceInjector(
                 api_key=os.environ['SANDBOX_API_KEY'],
                 api_url=os.environ['SANDBOX_REMOTE_RUNTIME_API_URL'],
             )
-        elif os.getenv('RUNTIME') in ('local', 'process'):
+        elif runtime in ('local', 'process'):
             config.sandbox = ProcessSandboxServiceInjector()
         else:
             # Support legacy environment variables for Docker sandbox configuration
@@ -386,9 +389,10 @@ def config_from_env() -> AppServerConfig:
             config.sandbox = DockerSandboxServiceInjector(**docker_sandbox_kwargs)
 
     if config.sandbox_spec is None:
-        if os.getenv('RUNTIME') == 'remote':
+        runtime = os.getenv('RUNTIME') or os.getenv('OH_RUNTIME', '')
+        if runtime == 'remote':
             config.sandbox_spec = RemoteSandboxSpecServiceInjector()
-        elif os.getenv('RUNTIME') in ('local', 'process'):
+        elif runtime in ('local', 'process'):
             config.sandbox_spec = ProcessSandboxSpecServiceInjector()
         else:
             config.sandbox_spec = DockerSandboxSpecServiceInjector()
