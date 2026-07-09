@@ -101,6 +101,15 @@ def get_default_web_url() -> str | None:
     return f'https://{web_host}'
 
 
+def get_backend_url() -> str | None:
+    """Get the backend URL for fallback conversation URLs in Railway deployments.
+    
+    This is used when there's no sandbox (Docker not available) to provide
+    a valid conversation URL for WebSocket connections.
+    """
+    return os.getenv('OH_BACKEND_URL') or os.getenv('WEB_HOST') or None
+
+
 def get_default_permitted_cors_origins() -> list[str]:
     """Get permitted CORS origins, falling back to legacy PERMITTED_CORS_ORIGINS env var.
 
@@ -196,6 +205,10 @@ class AppServerConfig(OpenHandsModel):
     web_url: str | None = Field(
         default_factory=get_default_web_url,
         description='The URL where OpenHands is running (e.g., http://localhost:3000)',
+    )
+    backend_url: str | None = Field(
+        default_factory=get_backend_url,
+        description='The backend URL for fallback conversation URLs in Railway deployments',
     )
     permitted_cors_origins: list[str] = Field(
         default_factory=get_default_permitted_cors_origins,

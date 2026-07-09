@@ -68,6 +68,7 @@ from openhands.app_server.app_conversation.sql_app_conversation_info_service imp
 from openhands.app_server.config import (
     get_event_callback_service,
     resolve_provider_llm_base_url,
+    get_global_config,
 )
 from openhands.app_server.errors import SandboxError
 from openhands.app_server.event.event_service import EventService
@@ -694,6 +695,13 @@ class LiveStatusAppConversationService(AppConversationServiceBase):
             if conversation_url:
                 conversation_url += f'/api/conversations/{app_conversation_info.id.hex}'
             session_api_key = sandbox.session_api_key
+        
+        # Fallback to backend_url when no sandbox URL is available (Railway process runtime)
+        if not conversation_url:
+            config = get_global_config()
+            backend_url = config.backend_url
+            if backend_url:
+                conversation_url = f'{backend_url}/api/conversations/{app_conversation_info.id.hex}'
 
         return AppConversation(
             **app_conversation_info.model_dump(),
