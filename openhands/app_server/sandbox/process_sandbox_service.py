@@ -125,7 +125,7 @@ class ProcessSandboxService(SandboxService):
         env = os.environ.copy()
         env.update(sandbox_spec.initial_env)
         env['SESSION_API_KEY'] = session_api_key
-        env['PORT'] = str(port)
+        env['port'] = str(port)
 
         # Prepare command arguments
         cmd = [
