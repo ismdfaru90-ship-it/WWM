@@ -45,7 +45,7 @@ def combine_lifespans(*lifespans):
     return combined_lifespan
 
 
-lifespans = [mcp_app.lifespan]
+lifespans = []
 app_lifespan_ = get_app_lifespan_service()
 if app_lifespan_:
     lifespans.append(app_lifespan_.lifespan)
