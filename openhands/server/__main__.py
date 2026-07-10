@@ -11,6 +11,7 @@ from openhands.app_server.utils.logger import LOG_JSON, get_uvicorn_log_config
 
 
 def main():
+    print('__main__.py main() called', flush=True)
     log_config = get_uvicorn_log_config()
     port = int(os.environ.get('port') or '3000')
     print(f'Starting agent server on port {port}...', flush=True)
@@ -23,6 +24,7 @@ def main():
         log_config=log_config,
         use_colors=False if LOG_JSON else None,
     )
+    print('uvicorn.run() returned', flush=True)
 
 
 if __name__ == '__main__':
