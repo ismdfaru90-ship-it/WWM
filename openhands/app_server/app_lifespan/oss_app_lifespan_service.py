@@ -20,9 +20,11 @@ class OssAppLifespanService(AppLifespanService):
     def _check_database_has_tables(self) -> bool:
         """Check if the database has the required tables."""
         from openhands.app_server.config import get_global_config
+        from openhands.app_server.services.db_session_injector import DbSessionInjector
         
         config = get_global_config()
-        db_path = config.database_url.replace('sqlite:///', '')
+        db_session = DbSessionInjector.from_app_config(config)
+        db_path = os.path.join(db_session.persistence_dir, 'openhands.db')
         if not os.path.exists(db_path):
             return False
         
