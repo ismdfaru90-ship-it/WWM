@@ -17,21 +17,30 @@ class OssAppLifespanService(AppLifespanService):
         if os.environ.get('SKIP_ALEMBIC_ON_STARTUP', '').lower() in ('1', 'true', 'yes'):
             self.run_alembic_on_startup = False
 
-    def _check_database_exists(self) -> bool:
-        """Check if the database file exists and has tables."""
+    def _check_database_has_tables(self) -> bool:
+        """Check if the database has the required tables."""
         from openhands.app_server.config import get_global_config
         
         config = get_global_config()
         db_path = config.database_url.replace('sqlite:///', '')
-        return os.path.exists(db_path) and os.path.getsize(db_path) > 0
+        if not os.path.exists(db_path):
+            return False
+        
+        import sqlite3
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='app_conversation_start_task'")
+        result = cursor.fetchone()
+        conn.close()
+        return result is not None
 
     async def __aenter__(self):
         print('OssAppLifespanService.__aenter__ called', flush=True)
         if self.run_alembic_on_startup:
-            if self._check_database_exists():
-                print('Database exists, skipping alembic migration', flush=True)
+            if self._check_database_has_tables():
+                print('Database has tables, skipping alembic migration', flush=True)
             else:
-                print('Database does not exist, running alembic migration', flush=True)
+                print('Database missing tables, running alembic migration', flush=True)
                 self.run_alembic()
         print('OssAppLifespanService.__aenter__ completed', flush=True)
         return self
