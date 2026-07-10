@@ -13,7 +13,7 @@ from openhands.app_server.utils.logger import LOG_JSON, get_uvicorn_log_config
 def main():
     log_config = get_uvicorn_log_config()
     port = int(os.environ.get('port') or '3000')
-    print(f'Starting agent server on port {port}...')
+    print(f'Starting agent server on port {port}...', flush=True)
 
     uvicorn.run(
         'openhands.server.listen:app',

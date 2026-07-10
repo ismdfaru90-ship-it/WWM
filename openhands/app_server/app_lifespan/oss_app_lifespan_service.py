@@ -18,14 +18,14 @@ class OssAppLifespanService(AppLifespanService):
             self.run_alembic_on_startup = False
 
     async def __aenter__(self):
-        print('OssAppLifespanService.__aenter__ called')
+        print('OssAppLifespanService.__aenter__ called', flush=True)
         if self.run_alembic_on_startup:
             self.run_alembic()
-        print('OssAppLifespanService.__aenter__ completed')
+        print('OssAppLifespanService.__aenter__ completed', flush=True)
         return self
 
     async def __aexit__(self, exc_type, exc_value, traceback):
-        print('OssAppLifespanService.__aexit__ called')
+        print('OssAppLifespanService.__aexit__ called', flush=True)
         pass
 
     def run_alembic(self):
