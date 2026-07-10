@@ -395,6 +395,17 @@ class ProcessSandboxService(SandboxService):
             return False
 
         try:
+            # Read agent server log before terminating
+            log_path = os.path.join(process_info.working_dir, '.openhands-agent-server.log')
+            if os.path.exists(log_path):
+                try:
+                    with open(log_path, 'r') as f:
+                        agent_log = f.read()
+                    if agent_log:
+                        _logger.error(f'Agent server log for sandbox {sandbox_id}: {agent_log[-2000:]}')
+                except Exception as e:
+                    _logger.warning(f'Failed to read agent log: {e}')
+
             # Terminate the process
             process = psutil.Process(process_info.pid)
             if process.is_running():
