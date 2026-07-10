@@ -125,14 +125,13 @@ class ProcessSandboxService(SandboxService):
         env = os.environ.copy()
         env.update(sandbox_spec.initial_env)
         env['SESSION_API_KEY'] = session_api_key
+        env['PORT'] = str(port)
 
         # Prepare command arguments
         cmd = [
             self.python_executable,
             '-m',
             self.agent_server_module,
-            '--port',
-            str(port),
         ]
 
         _logger.info(
