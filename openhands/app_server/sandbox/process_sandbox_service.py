@@ -161,9 +161,10 @@ class ProcessSandboxService(SandboxService):
         except Exception as e:
             raise SandboxError(f'Failed to start agent process: {e}')
 
-    async def _wait_for_server_ready(self, port: int, timeout: int = 30) -> bool:
+    async def _wait_for_server_ready(self, port: int, timeout: int = 120) -> bool:
         """Wait for the agent server to be ready."""
         start_time = time.time()
+        _logger.info(f'Waiting for agent server on port {port}...')
         while time.time() - start_time < timeout:
             try:
                 url = replace_localhost_hostname_for_docker(
@@ -173,10 +174,13 @@ class ProcessSandboxService(SandboxService):
                 if response.status_code == 200:
                     data = response.json()
                     if data.get('status') == 'ok':
+                        _logger.info(f'Agent server ready on port {port}')
                         return True
-            except Exception:
-                pass
+            except Exception as e:
+                if int(time.time() - start_time) % 10 == 0:
+                    _logger.info(f'Still waiting for agent server on port {port}...')
             await asyncio.sleep(1)
+        _logger.error(f'Timeout waiting for agent server on port {port}')
         return False
 
     def _get_process_status(self, process_info: ProcessInfo) -> SandboxStatus:
