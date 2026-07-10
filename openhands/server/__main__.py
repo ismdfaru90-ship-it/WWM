@@ -12,11 +12,13 @@ from openhands.app_server.utils.logger import LOG_JSON, get_uvicorn_log_config
 
 def main():
     log_config = get_uvicorn_log_config()
+    port = int(os.environ.get('port') or '3000')
+    print(f'Starting agent server on port {port}...')
 
     uvicorn.run(
         'openhands.server.listen:app',
         host='0.0.0.0',
-        port=int(os.environ.get('port') or '3000'),
+        port=port,
         log_level='debug' if os.environ.get('DEBUG') else 'info',
         log_config=log_config,
         use_colors=False if LOG_JSON else None,
