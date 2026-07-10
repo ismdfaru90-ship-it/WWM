@@ -126,6 +126,7 @@ class ProcessSandboxService(SandboxService):
         env.update(sandbox_spec.initial_env)
         env['SESSION_API_KEY'] = session_api_key
         env['port'] = str(port)
+        env['SKIP_ALEMBIC_ON_STARTUP'] = '1'
 
         # Prepare command arguments
         cmd = [

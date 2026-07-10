@@ -12,6 +12,11 @@ from openhands.app_server.app_lifespan.app_lifespan_service import AppLifespanSe
 class OssAppLifespanService(AppLifespanService):
     run_alembic_on_startup: bool = True
 
+    def __init__(self):
+        super().__init__()
+        if os.environ.get('SKIP_ALEMBIC_ON_STARTUP', '').lower() in ('1', 'true', 'yes'):
+            self.run_alembic_on_startup = False
+
     async def __aenter__(self):
         if self.run_alembic_on_startup:
             self.run_alembic()
