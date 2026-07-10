@@ -37,10 +37,14 @@ def combine_lifespans(*lifespans):
     # Create a combined lifespan to manage multiple session managers
     @contextlib.asynccontextmanager
     async def combined_lifespan(app):
+        print('combined_lifespan.__aenter__ called', flush=True)
         async with contextlib.AsyncExitStack() as stack:
-            for lifespan in lifespans:
+            for i, lifespan in enumerate(lifespans):
+                print(f'Entering lifespan {i}', flush=True)
                 await stack.enter_async_context(lifespan(app))
+            print('All lifespans entered', flush=True)
             yield
+            print('combined_lifespan.__aexit__ called', flush=True)
 
     return combined_lifespan
 
