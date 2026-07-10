@@ -17,10 +17,22 @@ class OssAppLifespanService(AppLifespanService):
         if os.environ.get('SKIP_ALEMBIC_ON_STARTUP', '').lower() in ('1', 'true', 'yes'):
             self.run_alembic_on_startup = False
 
+    def _check_database_exists(self) -> bool:
+        """Check if the database file exists and has tables."""
+        from openhands.app_server.config import get_global_config
+        
+        config = get_global_config()
+        db_path = config.database_url.replace('sqlite:///', '')
+        return os.path.exists(db_path) and os.path.getsize(db_path) > 0
+
     async def __aenter__(self):
         print('OssAppLifespanService.__aenter__ called', flush=True)
         if self.run_alembic_on_startup:
-            self.run_alembic()
+            if self._check_database_exists():
+                print('Database exists, skipping alembic migration', flush=True)
+            else:
+                print('Database does not exist, running alembic migration', flush=True)
+                self.run_alembic()
         print('OssAppLifespanService.__aenter__ completed', flush=True)
         return self
 
