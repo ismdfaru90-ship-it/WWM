@@ -368,9 +368,9 @@ def config_from_env() -> AppServerConfig:
         runtime = os.getenv('RUNTIME') or os.getenv('OH_RUNTIME', '')
         _logger.error(f'openhands.app_server.config: RUNTIME={os.getenv("RUNTIME")}, OH_RUNTIME={os.getenv("OH_RUNTIME")}, resolved={runtime}')
         
-        # If Docker is not available, force process runtime
-        if not docker_available:
-            _logger.error('openhands.app_server.config: Docker not available, forcing process runtime')
+        # If Docker is not available and the user didn't explicitly request remote, force process runtime
+        if not docker_available and runtime != 'remote':
+            _logger.error(f'openhands.app_server.config: Docker not available and runtime was {runtime}, forcing process runtime')
             runtime = 'process'
         
         if runtime == 'remote':
@@ -430,9 +430,9 @@ def config_from_env() -> AppServerConfig:
     if config.sandbox_spec is None:
         runtime = os.getenv('RUNTIME') or os.getenv('OH_RUNTIME', '')
         
-        # If Docker is not available, force process runtime
-        if not docker_available:
-            _logger.error('openhands.app_server.config: Docker not available, forcing process runtime for sandbox_spec')
+        # If Docker is not available and the user didn't explicitly request remote, force process runtime for sandbox_spec
+        if not docker_available and runtime != 'remote':
+            _logger.error(f'openhands.app_server.config: Docker not available and runtime was {runtime}, forcing process runtime for sandbox_spec')
             runtime = 'process'
         
         if runtime == 'remote':
